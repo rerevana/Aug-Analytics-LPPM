@@ -13,7 +13,7 @@ import json
 import requests # Untuk interaksi API Superset
 
 # GANTI DENGAN PROJECT ID DAN DATASET ID ANDA YANG SEBENARNYA
-BIGQUERY_PROJECT_ID = ""
+BIGQUERY_PROJECT_ID = "swift-kiln-461800-u0"
 BIGQUERY_DATASET_ID = "proposal_penelitian" # Hanya nama dataset
 
 def get_actual_tables_from_bigquery() -> list:
@@ -252,7 +252,7 @@ def augmented_analytics_workflow():
     print(f"SQL Query yang Dihasilkan: {sql_query}")
 
     # Panggil fungsi tes di sini jika ingin selalu menguji
-    test_generated_sql_query(sql_query) 
+    test_generated_sql_query(sql_query)
 
     # # 6. Integrasi dengan Apache Superset (menggunakan API)
     # print("\n--- Mengintegrasikan dengan Apache Superset ---")
