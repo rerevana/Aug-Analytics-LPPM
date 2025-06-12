@@ -13,9 +13,8 @@ import json
 import requests # Untuk interaksi API Superset
 
 # GANTI DENGAN PROJECT ID DAN DATASET ID ANDA YANG SEBENARNYA
-BIGQUERY_PROJECT_ID = ""
-BIGQUERY_DATASET_ID = "proposal_penelitian" # Hanya nama dataset
-
+BIGQUERY_PROJECT_ID = "swift-kiln-461800-u0"
+BIGQUERY_DATASET_ID = "proposal_penelitian" # Hanya nama dataset
 
 def get_actual_tables_from_bigquery() -> list:
     """
@@ -92,6 +91,38 @@ def execute_query_on_bigquery(sql_query: str) -> str:
         print(f"ERROR: Gagal mengeksekusi query di BigQuery: {e}")
         return f'{{"error": "Gagal mengeksekusi query di BigQuery: {str(e)}"}}'
 
+def test_generated_sql_query(sql_query: str, limit: int = 5):
+    """
+    Fungsi untuk menguji query SQL yang dihasilkan dengan menjalankannya di BigQuery
+    dan mencetak beberapa baris hasil.
+    """
+    if not sql_query or "SELECT" not in sql_query.upper():
+        print("TEST_QUERY: Query SQL tidak valid atau kosong.")
+        return
+
+    # Periksa apakah query asli sudah memiliki klausa LIMIT
+    # Ini adalah pemeriksaan sederhana, mungkin perlu regex yang lebih canggih untuk kasus kompleks
+    if "LIMIT" in sql_query.upper():
+        test_query = sql_query # Gunakan query asli jika sudah ada LIMIT
+    else:
+        test_query = f"{sql_query} LIMIT {limit}" # Tambahkan LIMIT jika belum ada
+    print(f"\n--- Menguji Query SQL di BigQuery ---")
+    print(f"Test Query: {test_query}")
+
+    query_result_json_str = execute_query_on_bigquery(test_query)
+    
+    if '"error":' in query_result_json_str:
+        print(f"\nHasil Test Query (JSON dengan Error): {query_result_json_str}")
+    else:
+        try:
+            query_result_list = json.loads(query_result_json_str)
+            if isinstance(query_result_list, list) and not query_result_list:
+                print("\nHasil Test Query: Tidak ada data yang dikembalikan oleh query.")
+            else:
+                print(f"\nHasil Test Query (JSON): {query_result_json_str}")
+        except json.JSONDecodeError:
+            # Jika bukan JSON valid dan tidak mengandung "error":
+            print(f"Hasil Test Query (Format tidak dikenali): {query_result_json_str}")
 
 # def get_superset_access_token():
 #     """Mendapatkan access token dari Superset menggunakan refresh token."""
@@ -211,7 +242,7 @@ def augmented_analytics_workflow():
 
     # 5. Mengubah JSON Map menjadi SQL Query
     print("\n--- Membuat SQL Query dari JSON Map dengan LLM ---")
-    sql_query = generate_sql_from_json_map(json_nested_map)
+    sql_query = generate_sql_from_json_map(json_nested_map, BIGQUERY_PROJECT_ID, BIGQUERY_DATASET_ID)
     if isinstance(sql_query, dict) and sql_query.get("error"): # Jika LLM mengembalikan error
          print(f"Error saat membuat SQL query: {sql_query.get('raw_response', sql_query.get('error'))}")
          return
@@ -219,6 +250,9 @@ def augmented_analytics_workflow():
         print(f"Gagal menghasilkan SQL query yang valid. Output LLM: {sql_query}")
         return
     print(f"SQL Query yang Dihasilkan: {sql_query}")
+
+    # Panggil fungsi tes di sini jika ingin selalu menguji
+    test_generated_sql_query(sql_query) 
 
     # # 6. Integrasi dengan Apache Superset (menggunakan API)
     # print("\n--- Mengintegrasikan dengan Apache Superset ---")

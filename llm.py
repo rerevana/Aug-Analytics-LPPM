@@ -106,16 +106,23 @@ def match_query_to_actual_tables(user_query_understanding: dict, actual_table_li
     except Exception: # Termasuk JSONDecodeError atau error dari call_openrouter
         return [] # Kembalikan list kosong jika ada error
     
-def generate_sql_from_json_map(json_map: dict, db_dialect: str = "BigQuery", model_name: str = "meta-llama/llama-3.3-70b-instruct") -> str:
+def generate_sql_from_json_map(json_map: dict, project_id: str, dataset_id: str, db_dialect: str = "BigQuery", model_name: str = "meta-llama/llama-3.3-70b-instruct") -> str:
     """
     Menggunakan LLM untuk mengubah JSON nested map menjadi query SQL.
     """
     json_map_str = json.dumps(json_map, indent=2)
+    table_qualification_instruction = (
+        f"PENTING: Semua referensi tabel dalam query SQL HARUS memenuhi syarat lengkap dengan project ID dan dataset ID. "
+        f"Gunakan format backtick (`) untuk mengapit nama project, dataset, dan tabel: `{project_id}`.`{dataset_id}`.`nama_tabel_dari_json_map`. "
+        f"Contoh yang BENAR: `{project_id}.{dataset_id}.users`. "
+        f"JANGAN menuliskan `{project_id}.{dataset_id}.users` tanpa backtick jika ada karakter khusus atau merupakan reserved keyword. Selalu gunakan backtick untuk keamanan."
+    )
     messages = [
         {
             "role": "system",
             "content": (
                 f"Anda adalah AI yang ahli dalam menerjemahkan struktur data JSON menjadi query SQL. "
+                f"{table_qualification_instruction} "
                 f"Berdasarkan JSON map berikut, buatlah query SQL yang valid untuk dialek {db_dialect}. "
                 "Pastikan outputnya HANYA string SQL query yang valid, tanpa teks tambahan atau penjelasan."
             )
@@ -124,7 +131,15 @@ def generate_sql_from_json_map(json_map: dict, db_dialect: str = "BigQuery", mod
     ]
     try:
         # LLM diharapkan mengembalikan string SQL murni
-        return call_openrouter(messages, model=model_name, max_tokens=1000, temperature=0.0)
+        response_content = call_openrouter(messages, model=model_name, max_tokens=1000, temperature=0.0)
+        # Membersihkan penanda blok kode Markdown jika ada
+        match = re.search(r"```(?:sql\s*)?([\s\S]*?)\s*```", response_content, re.IGNORECASE)
+        if match:
+            cleaned_sql = match.group(1).strip()
+            return cleaned_sql
+        else:
+            # Jika tidak ada blok markdown, kembalikan apa adanya (setelah strip)
+            return response_content.strip()
     except Exception as e: # Termasuk potensi error dari call_openrouter jika tidak mengembalikan string
         return {"error": f"Error saat menghasilkan SQL dari JSON map: {str(e)}", "raw_response": ""}
 
