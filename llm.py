@@ -24,14 +24,11 @@ def understand_user_query(user_query: str, model_name: str = "meta-llama/llama-3
     try:
         response_content = call_openrouter(messages, model=model_name, max_tokens=500, temperature=0.2)
         
-        # Mencari blok JSON dalam respons menggunakan regex
-        # Ini akan mencari konten di antara ```json ... ``` atau hanya { ... }
         match = re.search(r"```json\s*([\s\S]*?)\s*```|(\{[\s\S]*\})", response_content)
         if match:
-            json_str = match.group(1) or match.group(2) # Ambil grup yang cocok
+            json_str = match.group(1) or match.group(2) 
             return json.loads(json_str)
         else:
-            # Jika tidak ada blok JSON yang jelas, coba parse langsung (mungkin LLM mengembalikan JSON murni)
             return json.loads(response_content)
     except json.JSONDecodeError:
         return {"error": "Failed to parse LLM response as JSON", "raw_response": response_content}
@@ -95,13 +92,11 @@ def generate_json_map_from_schema_and_query(user_query: str, table_schemas: dict
             temperature=0.1
         )
 
-        # Ambil hanya isi JSON dari hasil LLM
         match = re.search(r"```json\s*([\s\S]*?)```|(\{[\s\S]*\})", response_content)
         if match:
             json_str = match.group(1) or match.group(2)
             return json.loads(json_str)
         else:
-            # Jika tidak ada format markdown, langsung coba parse
             return json.loads(response_content.strip())
 
     except json.JSONDecodeError:
@@ -213,20 +208,3 @@ def generate_sql_from_json_map(json_map: dict, project_id: str, dataset_id: str,
             "error": f"Error saat menghasilkan SQL dari JSON map: {str(e)}",
             "raw_response": response_content if 'response_content' in locals() else ""
         }
-
-
-    
-# def generate_insights_with_llama(prompt: str, data_context: str = "", model_name: str = "meta-llama/llama-3.3-70b-instruct") -> str:
-#     """
-#     Menggunakan model Llama (via OpenRouter) untuk menghasilkan insight atau jawaban
-#     berdasarkan prompt dan konteks data yang diberikan.
-#     """
-#     messages = [
-#         {"role": "system", "content": "Anda adalah asisten analitik data yang cerdas."},
-#         {"role": "user", "content": f"{prompt}\n\nData Kontekstual (jika ada):\n{data_context}"}
-#     ]
-#     try:
-#         response_content = call_openrouter(messages, model=model_name, max_tokens=2000, temperature=0.5)
-#         return response_content
-#     except Exception as e:
-#         return f"Error saat memanggil LLM: {str(e)}"

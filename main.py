@@ -2,7 +2,6 @@ from llm import (
     understand_user_query,
     generate_json_map_from_schema_and_query, # Fungsi baru
     generate_sql_from_json_map,             # Fungsi baru
-    # generate_insights_with_llama,
     match_query_to_actual_tables # Fungsi baru dari llm.py
 )
 
@@ -124,78 +123,6 @@ def test_generated_sql_query(sql_query: str, limit: int = 5):
             # Jika bukan JSON valid dan tidak mengandung "error":
             print(f"Hasil Test Query (Format tidak dikenali): {query_result_json_str}")
 
-# def get_superset_access_token():
-#     """Mendapatkan access token dari Superset menggunakan refresh token."""
-#     if not SUPERSET_API_TOKEN or not SUPERSET_API_URL:
-#         print("ERROR: Konfigurasi Superset API URL atau Token tidak ditemukan.")
-#         return None
-    
-#     auth_url = f"{SUPERSET_API_URL}/api/v1/security/login"
-#     payload = {
-#         "username": "", # Kosongkan jika menggunakan refresh token untuk authuser
-#         "password": "", # Kosongkan
-#         "provider": "db", # atau provider lain jika dikonfigurasi
-#         "refresh": True
-#     }
-#     # Untuk Superset versi baru, login dengan API key mungkin berbeda
-#     # atau Anda mungkin perlu menggunakan /security/csrf_token/ dulu
-#     # Cara paling umum adalah menggunakan refresh token yang didapat dari UI Superset
-#     # atau membuat pengguna API khusus.
-#     # Jika menggunakan API Key (bukan JWT), header Authorization mungkin cukup.
-#     # Untuk contoh ini, kita asumsikan SUPERSET_API_TOKEN adalah refresh token
-#     # atau API key yang bisa langsung digunakan sebagai Bearer token.
-#     # Jika SUPERSET_API_TOKEN adalah refresh token, Anda perlu endpoint /security/refresh
-    
-#     # Placeholder: Asumsikan SUPERSET_API_TOKEN adalah access token yang valid atau API Key
-#     # Jika ini adalah API Key yang dibuat di "Security" > "API Keys" di Superset,
-#     # Anda tidak perlu login/refresh, cukup gunakan di header Authorization.
-#     # Untuk contoh ini, kita akan menganggap SUPERSET_API_TOKEN adalah access token yang siap pakai.
-#     # Jika Anda perlu mekanisme refresh, implementasinya akan lebih kompleks.
-#     return SUPERSET_API_TOKEN # Ini adalah penyederhanaan.
-
-# def create_superset_dataset(access_token: str, sql_query: str, dataset_name: str) -> int | None:
-#     """Membuat dataset virtual di Superset dan mengembalikan ID dataset."""
-#     if not access_token: return None
-#     dataset_url = f"{SUPERSET_API_URL}/api/v1/dataset/"
-#     headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
-#     payload = {
-#         "database": SUPERSET_BIGQUERY_DATABASE_ID, # ID database BigQuery di Superset
-#         "sql": sql_query,
-#         "table_name": dataset_name,
-#         "schema": BIGQUERY_DATASET_ID # Opsional, tergantung konfigurasi Superset
-#     }
-#     try:
-#         response = requests.post(dataset_url, headers=headers, json=payload)
-#         response.raise_for_status()
-#         return response.json().get("id")
-#     except requests.exceptions.RequestException as e:
-#         print(f"ERROR: Gagal membuat dataset di Superset: {e}. Response: {e.response.text if e.response else 'No response'}")
-#         return None
-
-# def create_superset_chart(access_token: str, dataset_id: int, chart_name: str, viz_type: str = "table") -> int | None:
-#     """Membuat chart di Superset dan mengembalikan ID chart."""
-#     if not access_token or not dataset_id: return None
-#     chart_url = f"{SUPERSET_API_URL}/api/v1/chart/"
-#     headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
-#     payload = {
-#         "datasource_id": dataset_id,
-#         "datasource_type": "table", # Dataset virtual dianggap 'table'
-#         "slice_name": chart_name,
-#         "viz_type": viz_type,
-#         # Parameter lain untuk chart bisa ditambahkan di 'params'
-#         # "params": json.dumps({"viz_type": viz_type, ...})
-#     }
-#     try:
-#         response = requests.post(chart_url, headers=headers, json=payload)
-#         response.raise_for_status()
-#         return response.json().get("id")
-#     except requests.exceptions.RequestException as e:
-#         print(f"ERROR: Gagal membuat chart di Superset: {e}. Response: {e.response.text if e.response else 'No response'}")
-#         return None
-
-# Fungsi untuk menambahkan chart ke dashboard bisa lebih kompleks karena melibatkan
-# update layout dashboard. Untuk kesederhanaan, kita akan fokus pada pembuatan dataset dan chart.
-
 
 def augmented_analytics_workflow():
     print("Selamat datang di Sistem Augmented Analytics!")
@@ -254,54 +181,5 @@ def augmented_analytics_workflow():
     # Panggil fungsi tes di sini jika ingin selalu menguji
     test_generated_sql_query(sql_query)
 
-    # # 6. Integrasi dengan Apache Superset (menggunakan API)
-    # print("\n--- Mengintegrasikan dengan Apache Superset ---")
-    # superset_access_token = get_superset_access_token()
-    # if superset_access_token and sql_query and "SELECT" in sql_query.upper():
-    #     dataset_name = f"aug_analytics_{user_input[:20].replace(' ', '_').lower()}_{hash(sql_query) % 10000}"
-    #     chart_name = f"chart_{dataset_name}"
-
-    #     dataset_id = create_superset_dataset(superset_access_token, sql_query, dataset_name)
-    #     if dataset_id:
-    #         print(f"INFO: Dataset '{dataset_name}' (ID: {dataset_id}) berhasil dibuat di Superset.")
-    #         chart_id = create_superset_chart(superset_access_token, dataset_id, chart_name)
-    #         if chart_id:
-    #             chart_url = f"{SUPERSET_API_URL}/explore/?slice_id={chart_id}"
-    #             print(f"INFO: Chart '{chart_name}' (ID: {chart_id}) berhasil dibuat. Akses di: {chart_url}")
-    #             # Anda bisa menyimpan chart_url atau menggunakannya lebih lanjut
-    #         else:
-    #             print("ERROR: Gagal membuat chart di Superset.")
-    #     else:
-    #         print("ERROR: Gagal membuat dataset di Superset, chart tidak akan dibuat.")
-    # else:
-    #     print("INFO: Tidak dapat melanjutkan integrasi Superset (token tidak ada atau query tidak valid).")
-
-    # # Eksekusi query di BigQuery (mungkin masih relevan untuk LLM insight atau logging)
-    # print("\n--- (Opsional) Mengeksekusi Query di BigQuery untuk Konteks LLM ---")
-    # bigquery_data_context_for_llm = execute_query_on_bigquery(sql_query)
-    # # print(f"Data Hasil Query (JSON) untuk LLM: {bigquery_data_context_for_llm}")
-
-    # # 7. (Opsional) Menghasilkan Insight dari Data dengan LLM
-    # print("\n--- Menghasilkan Insight dengan LLM (dari data hasil query) ---")
-    # insight_prompt = f"Berdasarkan permintaan pengguna '{user_input}' dan data berikut dari BigQuery, berikan analisis atau jawaban:"
-    # final_insights = generate_insights_with_llama(prompt=insight_prompt, data_context=bigquery_data_context)
-    # print(f"Insight Akhir dari LLM:\n{final_insights}")
-
-    # # 8. (Opsional) Mapping JSON dan Penyimpanan
-    # # map_and_store_data({
-    # #     "original_query": user_input,
-    # #     "parsed_query": parsed_query,
-    # #     "selected_tables": relevant_tables,
-    # #     "table_schemas": table_schemas,
-    # #     "json_nested_map": json_nested_map,
-    # #     "generated_sql": sql_query,
-    # #     "query_result_for_llm": json.loads(bigquery_data_context_for_llm) if bigquery_data_context_for_llm and not bigquery_data_context_for_llm.startswith('{"error":') else bigquery_data_context_for_llm,
-    # #     "final_insights": final_insights
-    # # }, "sqlite:///./analytics_results.db") # Contoh koneksi string
-
-    # print("\nAlur kerja augmented analytics selesai.")
-
 if __name__ == "__main__":
-    # Pastikan API_KEY, PROJECT_TITLE, dan REFERER sudah benar di config.py
-    # dan OpenRouter dapat diakses.
     augmented_analytics_workflow()
