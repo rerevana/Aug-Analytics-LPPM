@@ -174,7 +174,9 @@ def augmented_analytics_workflow():
     print(f"SQL Query yang Dihasilkan: {sql_query}")
 
     # Panggil fungsi tes di sini jika ingin selalu menguji
-    test_generated_sql_query(sql_query) 
+
+    test_generated_sql_query(sql_query)
+
 
 if __name__ == "__main__":
     augmented_analytics_workflow()
