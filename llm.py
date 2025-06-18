@@ -23,7 +23,16 @@ def understand_user_query(user_query: str, model_name: str = "meta-llama/llama-3
 
     try:
         response_content = call_openrouter(messages, model=model_name, max_tokens=500, temperature=0.2)
-
+        match = re.search(r"```json\s*([\s\S]*?)\s*```|(\{[\s\S]*\})", response_content)
+        if match:
+            json_str = match.group(1) or match.group(2) # Ambil grup yang cocok
+            return json.loads(json_str)
+        else:
+            return json.loads(response_content)
+    except json.JSONDecodeError:
+        return {"error": "Failed to parse LLM response as JSON", "raw_response": response_content}
+    except Exception as e:
+        return {"error": str(e), "raw_response": ""}
 
 def generate_json_map_from_schema_and_query(user_query: str, table_schemas: dict, model_name: str = "meta-llama/llama-3.3-70b-instruct") -> dict:
     """
@@ -60,6 +69,8 @@ def generate_json_map_from_schema_and_query(user_query: str, table_schemas: dict
                 "JOIN RELASI:\n"
                 "- Jika ada kolom foreign key seperti `tahun_id`, maka WAJIB melakukan JOIN ke tabel `tahun`\n"
                 "- menggunakan `penelitian.tahun_id = tahun.id`, lalu filter nilai tahun pakai `tahun.tahun = XXXX`\n\n"
+                "- Jika ada kolom foreign key seperti `author_id`, maka WAJIB melakukan JOIN ke tabel `author`\n"
+                "- menggunakan `penelitian.author_id = author.id`, lalu untuk mencari nama pakai `author.nama = XXXX`\n\n"
                 "(misal: author_id), maka Anda HARUS melakukan JOIN ke tabel referensi "
                 "dan memilih nama atau detail lainnya.\n"
                 "- Jika field 'agregasi' berisi DISTINCT, gunakan agregasi DISTINCT.\n"
@@ -86,6 +97,11 @@ def generate_json_map_from_schema_and_query(user_query: str, table_schemas: dict
             json_str = match.group(1) or match.group(2)
             return json.loads(json_str)
         else:
+            return json.loads(response_content)
+    except json.JSONDecodeError:
+        return {"error": "Failed to parse LLM response for JSON map as JSON", "raw_response": response_content}
+    except Exception as e:
+        return {"error": str(e), "raw_response": ""}
 
 
 def match_query_to_actual_tables(user_query_understanding: dict, actual_table_list: list, dataset_context: str = "", model_name: str = "meta-llama/llama-3.3-70b-instruct") -> list:
@@ -142,7 +158,6 @@ def generate_sql_from_json_map(json_map: dict, project_id: str, dataset_id: str,
         f"5. Jika ada field 'distinct: true' dalam JSON, gunakan SELECT DISTINCT.\n"
         f"6. Hasilkan query SQL murni saja. Jangan sertakan penjelasan atau format markdown.\n"
         f"7. Jika field 'agregasi' berisi DISTINCT, gunakan SELECT DISTINCT `kolom`.\n"
-        f"8. Selalu gunakan project_id ini: `swift-kiln-461800-u0` untuk semua tabel.\n"
     )
 
     messages = [
@@ -177,3 +192,8 @@ def generate_sql_from_json_map(json_map: dict, project_id: str, dataset_id: str,
         if match:
             cleaned_sql = (match.group(1) or match.group(2)).strip()
             return cleaned_sql
+        else:
+            # Jika tidak ada blok markdown, kembalikan apa adanya (setelah strip)
+            return response_content.strip()
+    except Exception as e: # Termasuk potensi error dari call_openrouter jika tidak mengembalikan string
+        return {"error": f"Error saat menghasilkan SQL dari JSON map: {str(e)}", "raw_response": ""}

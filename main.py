@@ -11,7 +11,7 @@ from google.cloud import bigquery # Import BigQuery
 import json
 import requests # Untuk interaksi API Superset
 
-BIGQUERY_PROJECT_ID = ""
+BIGQUERY_PROJECT_ID = "swift-kiln-461800-u0"
 BIGQUERY_DATASET_ID = "proposal_penelitian" # nama dataset
 
 def get_actual_tables_from_bigquery() -> list:
