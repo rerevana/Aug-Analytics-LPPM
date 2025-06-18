@@ -1,7 +1,6 @@
-API_KEY = "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"
+API_KEY = ""
 PROJECT_TITLE = "asn-profiling-system"
 REFERER = "https://yourproject.com"
 
 # SUPERSET_API_URL = "http://localhost:8088" 
 # SUPERSET_API_TOKEN = "UPERSET_ACCESS_TOKEN" 
-# SUPERSET_BIGQUERY_DATABASE_ID = 1 

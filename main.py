@@ -11,7 +11,6 @@ from google.cloud import bigquery # Import BigQuery
 import json
 import requests # Untuk interaksi API Superset
 
-# GANTI DENGAN PROJECT ID DAN DATASET ID ANDA YANG SEBENARNYA
 BIGQUERY_PROJECT_ID = ""
 BIGQUERY_DATASET_ID = "proposal_penelitian" # nama dataset
 
@@ -98,13 +97,10 @@ def test_generated_sql_query(sql_query: str, limit: int = 5):
     if not sql_query or "SELECT" not in sql_query.upper():
         print("TEST_QUERY: Query SQL tidak valid atau kosong.")
         return
-
-    # Periksa apakah query asli sudah memiliki klausa LIMIT
-    # Ini adalah pemeriksaan sederhana, mungkin perlu regex yang lebih canggih untuk kasus kompleks
     if "LIMIT" in sql_query.upper():
-        test_query = sql_query # Gunakan query asli jika sudah ada LIMIT
+        test_query = sql_query
     else:
-        test_query = f"{sql_query} LIMIT {limit}" # Tambahkan LIMIT jika belum ada
+        test_query = f"{sql_query} LIMIT {limit}" # Tambahkan LIMIT 
     print(f"\n--- Menguji Query SQL di BigQuery ---")
     print(f"Test Query: {test_query}")
 
@@ -122,7 +118,6 @@ def test_generated_sql_query(sql_query: str, limit: int = 5):
         except json.JSONDecodeError:
             # Jika bukan JSON valid dan tidak mengandung "error":
             print(f"Hasil Test Query (Format tidak dikenali): {query_result_json_str}")
-
 
 def augmented_analytics_workflow():
     print("Selamat datang di Sistem Augmented Analytics!")
@@ -179,7 +174,9 @@ def augmented_analytics_workflow():
     print(f"SQL Query yang Dihasilkan: {sql_query}")
 
     # Panggil fungsi tes di sini jika ingin selalu menguji
+
     test_generated_sql_query(sql_query)
+
 
 if __name__ == "__main__":
     augmented_analytics_workflow()

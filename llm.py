@@ -23,17 +23,6 @@ def understand_user_query(user_query: str, model_name: str = "meta-llama/llama-3
 
     try:
         response_content = call_openrouter(messages, model=model_name, max_tokens=500, temperature=0.2)
-        
-        match = re.search(r"```json\s*([\s\S]*?)\s*```|(\{[\s\S]*\})", response_content)
-        if match:
-            json_str = match.group(1) or match.group(2) 
-            return json.loads(json_str)
-        else:
-            return json.loads(response_content)
-    except json.JSONDecodeError:
-        return {"error": "Failed to parse LLM response as JSON", "raw_response": response_content}
-    except Exception as e:
-        return {"error": str(e), "raw_response": ""}
 
 
 def generate_json_map_from_schema_and_query(user_query: str, table_schemas: dict, model_name: str = "meta-llama/llama-3.3-70b-instruct") -> dict:
@@ -97,18 +86,6 @@ def generate_json_map_from_schema_and_query(user_query: str, table_schemas: dict
             json_str = match.group(1) or match.group(2)
             return json.loads(json_str)
         else:
-            return json.loads(response_content.strip())
-
-    except json.JSONDecodeError:
-        return {
-            "error": "Gagal mem-parse response dari LLM sebagai JSON valid.",
-            "raw_response": response_content
-        }
-    except Exception as e:
-        return {
-            "error": str(e),
-            "raw_response": response_content if 'response_content' in locals() else ""
-        }
 
 
 def match_query_to_actual_tables(user_query_understanding: dict, actual_table_list: list, dataset_context: str = "", model_name: str = "meta-llama/llama-3.3-70b-instruct") -> list:
@@ -200,11 +177,3 @@ def generate_sql_from_json_map(json_map: dict, project_id: str, dataset_id: str,
         if match:
             cleaned_sql = (match.group(1) or match.group(2)).strip()
             return cleaned_sql
-
-        return response_content.strip()
-
-    except Exception as e:
-        return {
-            "error": f"Error saat menghasilkan SQL dari JSON map: {str(e)}",
-            "raw_response": response_content if 'response_content' in locals() else ""
-        }
