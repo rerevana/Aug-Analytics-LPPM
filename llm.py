@@ -42,40 +42,29 @@ def generate_json_map_from_schema_and_query(user_query: str, table_schemas: dict
 
     schemas_str = json.dumps(table_schemas, indent=2)
 
-    # PROMPT UTAMA UNTUK LLM
     messages = [
         {
             "role": "system",
             "content": (
-                "Anda adalah AI yang ahli dalam menerjemahkan permintaan pengguna menjadi struktur data JSON "
-                "yang menggambarkan bagaimana query SQL harus dibentuk.\n\n"
-                "Tugas Anda adalah mengubah permintaan pengguna menjadi JSON nested map dengan format sebagai berikut:\n\n"
+                "Anda adalah AI yang menerjemahkan permintaan pengguna menjadi JSON yang menggambarkan struktur query SQL.\n\n"
+                "Format JSON:\n"
                 "{\n"
                 '  "tabel": "nama_tabel_utama",\n'
                 '  "kolom": ["kolom1", "kolom2"],\n'
-                '  "join": [\n'
-                '    { "tabel": "nama_tabel_lain", "on": "tabel1.kolom = tabel2.kolom" }\n'
-                '  ],\n'
-                '  "filter": [\n'
-                '    { "kolom": "nama_kolom", "operator": "=", "nilai": 2023 }\n'
-                '  ],\n'
-                '  "agregasi": [\n'
-                '    { "fungsi": "GROUP BY", "kolom": "author.nama" }\n'
-                '  ]\n'
-                '}\n\n'
-                "⚠️ PERHATIKAN:\n"
-                "- Output HANYA berupa JSON VALID. Tidak ada komentar, tidak ada markdown, tidak ada penjelasan.\n"
-                "- Gunakan tanda kutip GANDA untuk semua key dan string value.\n"
-                "JOIN RELASI:\n"
-                "- Jika ada kolom foreign key seperti `tahun_id`, maka WAJIB melakukan JOIN ke tabel `tahun`\n"
-                "- menggunakan `penelitian.tahun_id = tahun.id`, lalu filter nilai tahun pakai `tahun.tahun = XXXX`\n\n"
-                "- Jika ada kolom foreign key seperti `author_id`, maka WAJIB melakukan JOIN ke tabel `author`\n"
-                "- menggunakan `penelitian.author_id = author.id`, lalu untuk mencari nama pakai `author.nama = XXXX`\n\n"
-                "(misal: author_id), maka Anda HARUS melakukan JOIN ke tabel referensi "
-                "dan memilih nama atau detail lainnya.\n"
-                "- Jika field 'agregasi' berisi DISTINCT, gunakan agregasi DISTINCT.\n"
-                "- Jika tidak ada bagian tertentu (join, filter, agregasi), bisa dihilangkan atau kosongkan.\n\n"
-                f"Berikut ini adalah skema tabel yang tersedia:\n\n{schemas_str}"
+                '  "join": [ { "tabel": "nama_tabel", "on": "tabel1.kolom = tabel2.kolom" } ],\n'
+                '  "filter": [ { "kolom": "nama_kolom", "operator": "=", "nilai": 2023 } ],\n'
+                '  "agregasi": [ { "fungsi": "GROUP BY", "kolom": "author.nama" } ],\n'
+                '  "order_by": { "kolom": "tahun.tahun", "urutan": "DESC" }\n'
+                "}\n\n"
+                "Catatan penting:\n"
+                "- Output hanya JSON valid. Tanpa markdown, komentar, atau penjelasan.\n"
+                "- Gunakan kutip ganda untuk semua key dan value string.\n"
+                "- Jika ada kolom foreign key seperti `author_id` atau `tahun_id`, WAJIB JOIN ke tabel referensinya.\n"
+                "  Contoh: `penelitian.author_id = author.id`, lalu filter pakai `author.nama = ...`\n"
+                "- Jika permintaan terkait luaran (haki, publikasi, dll), dan menyebut tahun/author, JOIN via `penelitian` ke `tahun` atau `author`.\n"
+                "- Jika diminta urutan (terbaru/abjad), tambahkan `order_by`.\n"
+                "- Jika tidak ada bagian tertentu (join/filter/agregasi/order_by), boleh kosong atau dihilangkan.\n\n"
+                f"Tabel tersedia:\n{schemas_str}"
             )
         },
         {
@@ -83,6 +72,7 @@ def generate_json_map_from_schema_and_query(user_query: str, table_schemas: dict
             "content": f"Permintaan pengguna: {user_query}"
         }
     ]
+
 
     try:
         response_content = call_openrouter(
@@ -117,12 +107,20 @@ def match_query_to_actual_tables(user_query_understanding: dict, actual_table_li
         return []
 
     prompt_content = (
-        f"Pemahaman permintaan pengguna:\nIntent: {user_query_understanding.get('intent')}\nEntitas: {user_query_understanding.get('entities', [])}\n\n"
-        f"Daftar tabel/view yang tersedia di database adalah: {actual_table_list}\n"
-        f"Konteks tambahan (jika ada): {dataset_context}\n"
-        "Berdasarkan pemahaman permintaan pengguna di atas, pilihlah dan kembalikan HANYA nama-nama tabel/view dari daftar tabel yang tersedia yang paling relevan. "
-        "Kembalikan hasilnya sebagai list JSON dari string nama tabel. Contoh: [\"tabel_a\", \"tabel_b\"]"
+        f"Permintaan pengguna:\n"
+        f"- Intent: {user_query_understanding.get('intent')}\n"
+        f"- Entitas: {user_query_understanding.get('entities', [])}\n\n"
+        f"Tabel/view tersedia:\n{actual_table_list}\n"
+        f"Konteks: {dataset_context}\n\n"
+        "Aturan:\n"
+        "- Jika menyebut `author` atau `tahun` dalam konteks `luaran` (publikasi, haki, dll), pilih tabel `luaran_*` lalu JOIN ke `luaran_penelitian`, "
+        "baru ke `author`/`tahun` jika diperlukan.\n"
+        "- Contoh: `luaran_publikasi → luaran_penelitian → author/tahun`\n"
+        "- Jangan pilih `author` atau `tahun` langsung jika relasinya melalui `luaran`\n\n"
+        "Tugas Anda: Pilih tabel/view paling relevan dari daftar di atas.\n"
+        "Hasilkan **list JSON** berisi nama tabel yang dipilih. Contoh: [\"tabel_a\", \"tabel_b\"]"
     )
+
     messages = [
         {"role": "system", "content": "Anda adalah AI yang ahli dalam mencocokkan permintaan pengguna dengan tabel database yang relevan. Jawab dalam format list JSON."},
         {"role": "user", "content": prompt_content}
@@ -144,21 +142,16 @@ def generate_sql_from_json_map(json_map: dict, project_id: str, dataset_id: str,
     json_map_str = json.dumps(json_map, indent=2)
 
     table_qualification_instruction = (
-        f"Anda akan membuat query SQL untuk BigQuery. Ikuti aturan berikut:\n\n"
-        f"1. KUALIFIKASI TABEL (FROM dan JOIN):\n"
-        f"   - Format lengkap: `{project_id}`.`{dataset_id}`.`nama_tabel`\n"
-        f"   - Tambahkan alias setelahnya. Contoh: FROM `{project_id}`.`{dataset_id}`.`penelitian` AS `p`\n\n"
-        f"2. KUALIFIKASI KOLOM:\n"
-        f"   - Jika alias digunakan, referensikan kolom sebagai `alias.kolom` (misal `p.nama`)\n"
-        f"   - Jika tanpa alias, gunakan `nama_tabel.kolom`\n\n"
-        f"3. SEMUA nama project, dataset, tabel, alias, dan kolom harus menggunakan backtick (`)\n\n"
-        f"4. Jika JSON memiliki field 'agregasi', gunakan fungsi agregasi yang sesuai (COUNT, SUM, AVG, dll).\n"
-        f"   - Contoh: SELECT COUNT(`p`.`id`) ...\n"
-        f"   - Jika ada join dan agregasi, gunakan alias kolom secara benar.\n\n"
-        f"5. Jika ada field 'distinct: true' dalam JSON, gunakan SELECT DISTINCT.\n"
-        f"6. Hasilkan query SQL murni saja. Jangan sertakan penjelasan atau format markdown.\n"
-        f"7. Jika field 'agregasi' berisi DISTINCT, gunakan SELECT DISTINCT `kolom`.\n"
+        f"Buat query SQL untuk BigQuery dengan aturan berikut:\n"
+        f"1. Format tabel lengkap: `{project_id}`.`{dataset_id}`.`nama_tabel` AS `alias`\n"
+        f"2. Referensi kolom: gunakan `alias.kolom` atau `nama_tabel.kolom`\n"
+        f"3. Semua nama (tabel, alias, kolom) wajib pakai backtick (`)\n"
+        f"4. Jika ada agregasi: gunakan fungsi seperti COUNT, SUM, AVG sesuai JSON\n"
+        f"5. Jika `distinct: true` → pakai SELECT DISTINCT\n"
+        f"6. Jika agregasi menggunakan DISTINCT → SELECT DISTINCT `kolom`\n"
+        f"7. Hasilkan hanya SQL murni, tanpa markdown, komentar, atau penjelasan\n"
     )
+
 
     messages = [
         {
