@@ -1,4 +1,4 @@
-API_KEY = "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"
+API_KEY = "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"
 PROJECT_TITLE = "asn-profiling-system"
 REFERER = "https://yourproject.com"
 

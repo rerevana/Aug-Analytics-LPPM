@@ -89,7 +89,7 @@ def execute_query_on_bigquery(sql_query: str) -> str:
         print(f"ERROR: Gagal mengeksekusi query di BigQuery: {e}")
         return f'{{"error": "Gagal mengeksekusi query di BigQuery: {str(e)}"}}'
 
-def test_generated_sql_query(sql_query: str, limit: int = 5):
+def test_generated_sql_query(sql_query: str):
     """
     Fungsi untuk menguji query SQL yang dihasilkan dengan menjalankannya di BigQuery
     dan mencetak beberapa baris hasil.
@@ -100,7 +100,7 @@ def test_generated_sql_query(sql_query: str, limit: int = 5):
     if "LIMIT" in sql_query.upper():
         test_query = sql_query
     else:
-        test_query = f"{sql_query} LIMIT {limit}" # Tambahkan LIMIT 
+        test_query = f"{sql_query}"
     print(f"\n--- Menguji Query SQL di BigQuery ---")
     print(f"Test Query: {test_query}")
 

@@ -60,9 +60,10 @@ def generate_json_map_from_schema_and_query(user_query: str, table_schemas: dict
                 "- Output hanya JSON valid. Tanpa markdown, komentar, atau penjelasan.\n"
                 "- Gunakan kutip ganda untuk semua key dan value string.\n"
                 "- Jika ada kolom foreign key seperti `author_id` atau `tahun_id`, WAJIB JOIN ke tabel referensinya.\n"
-                "  Contoh: `penelitian.author_id = author.id`, lalu filter pakai `author.nama = ...`\n"
-                "- Jika permintaan terkait luaran (haki, publikasi, dll), dan menyebut tahun/author, JOIN via `penelitian` ke `tahun` atau `author`.\n"
-                "- Jika diminta urutan (terbaru/abjad), tambahkan `order_by`.\n"
+                "  Contoh: `luaran_penelitian.author_id = author.id`, lalu filter pakai `author.nama LIKE ...`\n"
+                "- Jika permintaan terkait luaran (haki, publikasi, dll) dan menyebut tahun/author, JOIN via `luaran_penelitian` ke `tahun` atau `author`.\n"
+                "- Jika mencari berdasarkan nama (misalnya nama penulis), gunakan filter dengan operator `LIKE`, bukan `=`. abaikan upercase dan lowercase nya\n"
+                "- Jika diminta urutan (terbaru/abjad), tambahkan field `order_by`.\n"
                 "- Jika tidak ada bagian tertentu (join/filter/agregasi/order_by), boleh kosong atau dihilangkan.\n\n"
                 f"Tabel tersedia:\n{schemas_str}"
             )
@@ -143,13 +144,16 @@ def generate_sql_from_json_map(json_map: dict, project_id: str, dataset_id: str,
 
     table_qualification_instruction = (
         f"Buat query SQL untuk BigQuery dengan aturan berikut:\n"
-        f"1. Format tabel lengkap: `{project_id}`.`{dataset_id}`.`nama_tabel` AS `alias`\n"
-        f"2. Referensi kolom: gunakan `alias.kolom` atau `nama_tabel.kolom`\n"
-        f"3. Semua nama (tabel, alias, kolom) wajib pakai backtick (`)\n"
-        f"4. Jika ada agregasi: gunakan fungsi seperti COUNT, SUM, AVG sesuai JSON\n"
-        f"5. Jika `distinct: true` → pakai SELECT DISTINCT\n"
-        f"6. Jika agregasi menggunakan DISTINCT → SELECT DISTINCT `kolom`\n"
-        f"7. Hasilkan hanya SQL murni, tanpa markdown, komentar, atau penjelasan\n"
+        "1. Jika hanya ingin tahu apakah data ada, hasilkan SQL yang mengembalikan boolean (TRUE/FALSE), gunakan:"
+        "- SELECT EXISTS (SELECT 1 FROM tabel WHERE kondisi) AS hasil\n"
+        "- atau: SELECT CASE WHEN COUNT(*) > 0 THEN TRUE ELSE FALSE END AS hasil\n"
+        f"2. Format tabel lengkap: `{project_id}`.`{dataset_id}`.`nama_tabel` AS `alias`\n"
+        f"3. Referensi kolom: gunakan `alias.kolom` atau `nama_tabel.kolom`\n"
+        f"4. Semua nama (tabel, alias, kolom) wajib pakai backtick (`)\n"
+        f"5. Jika ada agregasi: gunakan fungsi seperti COUNT, SUM, AVG sesuai JSON\n"
+        f"6. Jika `distinct: true` → pakai SELECT DISTINCT\n"
+        f"7. Jika agregasi menggunakan DISTINCT → SELECT DISTINCT `kolom`\n"
+        f"8. Hasilkan hanya SQL murni, tanpa markdown, komentar, atau penjelasan\n"
     )
 
 
