@@ -1,0 +1,5 @@
+google-generativeai
+google-cloud-bigquery
+python-dotenv
+pdfplumber
+requests
