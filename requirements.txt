@@ -3,3 +3,7 @@ google-cloud-bigquery
 python-dotenv
 pdfplumber
 requests
+pydantic
+PyMuPDF<1.24.0
+pytesseract
+Pillow
