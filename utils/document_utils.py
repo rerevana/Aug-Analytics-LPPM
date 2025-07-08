@@ -7,23 +7,21 @@ from ocr import ocr_pdf_from_bytes # Impor fungsi OCR yang baru kita buat
 
 logger = logging.getLogger(__name__)
 
-# Jika teks yang diekstrak secara normal kurang dari 100 karakter, kita asumsikan itu adalah PDF hasil scan dan perlu di-OCR.
+
 MIN_TEXT_LENGTH_FOR_NON_OCR = 100
 
-def find_pdf_url_in_results(query_result: str) -> Optional[str]:
-    """
-    Mencari URL PDF dari hasil query dalam bentuk string.
-    Asumsi URL di dalam teks diawali http/https dan diakhiri .pdf.
-    """
-    if not isinstance(query_result, str):
-        return None
-    match = re.search(r'https?://\S+\.pdf', query_result, re.IGNORECASE)
-    if match:
-        url = match.group(0)
-        logger.info(f"URL PDF ditemukan di hasil query: {url}")
-        return url
-    logger.warning("Tidak ada URL PDF yang ditemukan di hasil query.")
-    return None
+def find_pdf_url_in_results(results_json: str) -> list[str]:
+    """Mencari semua URL PDF dalam hasil query JSON."""
+    pdf_urls = []
+    try:
+        data = json.loads(results_json)
+        for row in data:
+            for value in row.values():
+                if isinstance(value, str) and value.lower().endswith('.pdf'):
+                    pdf_urls.append(value)
+    except (json.JSONDecodeError, TypeError) as e:
+        logger.warning(f"Gagal mem-parse JSON untuk mencari URL: {e}")
+    return pdf_urls # This now returns a list
 
 def extract_text_from_pdf_url(pdf_url: str) -> Optional[str]:
     """

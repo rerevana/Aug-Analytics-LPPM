@@ -50,34 +50,43 @@ def _generate_sql_from_user_input(user_input: str) -> str | None:
 def unified_workflow(user_input: str):
     """Alur kerja terpadu yang menangani Text-to-SQL dan RAG secara dinamis."""
     logger.info("--- Alur Kerja Terpadu Dimulai ---")
-
+    
     # Langkah 1 & 2: Selalu coba hasilkan dan jalankan SQL
     sql_query = _generate_sql_from_user_input(user_input)
     if not sql_query:
         print("\n--- Jawaban Akhir ---\nMaaf, saya tidak dapat membuat query SQL untuk pertanyaan tersebut.")
         return
-
+    
     logger.info("STEP 3: Eksekusi Query...")
     query_result = execute_query(sql_query)
 
-    # Langkah 4: Periksa hasil query untuk URL dokumen
-    document_url = find_pdf_url_in_results(query_result)
+    # Langkah 4: Periksa hasil query untuk URL dokumen (modifikasi di sini)
+    document_urls = find_pdf_url_in_results(query_result)
 
     # Langkah 5: Tentukan alur selanjutnya secara dinamis
-    if document_url:
-        # Alur RAG (Analisis Konten Dokumen)
-        logger.info(f"Dokumen ditemukan: {document_url}")
-        logger.info("STEP 4: Mengekstrak teks dari dokumen...")
-        document_text = extract_text_from_pdf_url(document_url)
+    if document_urls:
+        # Alur RAG (Analisis Konten Dokumen) untuk banyak dokumen
+        all_document_texts = []
+        for doc_url in document_urls:
+            logger.info(f"Dokumen ditemukan: {doc_url}")
+            logger.info(f"STEP 4: Mengekstrak teks dari dokumen: {doc_url}...")
+            doc_text = extract_text_from_pdf_url(doc_url)
+            if doc_text:
+                all_document_texts.append(doc_text)
+            else:
+                logger.warning(f"Gagal mengekstrak teks dari dokumen: {doc_url}. Melanjutkan ke dokumen berikutnya jika ada.")
 
-        if not document_text:
-            logger.error(f"Gagal mengekstrak teks dari dokumen: {document_url}")
+        if not all_document_texts:
+            logger.error("Tidak ada teks yang berhasil diekstrak dari dokumen manapun.")
             print("\n--- Jawaban Akhir ---\nGagal mengekstrak konten dari dokumen. Silakan periksa URL atau format file.")
             return
 
-        logger.info("Ekstraksi teks berhasil.")
-        logger.info("STEP 5: Menjawab pertanyaan dari konteks dokumen...")
-        final_answer = answer_from_documents(user_input, document_text)
+        # Gabungkan semua teks dari dokumen yang berhasil diekstrak
+        combined_document_text = "\n".join(all_document_texts)
+        logger.info("Ekstraksi teks dari semua dokumen berhasil.")
+        logger.info("STEP 5: Menjawab pertanyaan dari konteks dokumen gabungan...")
+        
+        final_answer = answer_from_documents(user_input, combined_document_text)
         print("\n--- Jawaban Akhir ---\n" + final_answer)
     else:
         # Alur Metadata (Tampilkan hasil query langsung)

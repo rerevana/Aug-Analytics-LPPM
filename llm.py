@@ -101,8 +101,9 @@ Aturan:
 5. **Menentukan Alias untuk Kolom**:
    - Jika nama kolom di JSON mengandung titik (misal: `author.nama`), gunakan alias yang sesuai untuk tabel `author` (misal: `t2.nama`).
    - Jika nama kolom tidak mengandung titik (misal: `laporan_akhir`), asumsikan kolom itu milik tabel utama dan gunakan alias `t1` (misal: `t1.laporan_akhir`).
-6. **ILIKE**: Untuk operator 'ILIKE', gunakan format `LOWER(alias.kolom) LIKE LOWER('%nilai%')`.
+6. **ILIKE**: Untuk operator 'ILIKE' digunakan untuk data yang bertipe string, gunakan format `LOWER(alias.kolom) LIKE LOWER('%nilai%')`.
 7. **Format**: Gunakan backtick (`) untuk nama kolom. Hasilkan HANYA kode SQL murni.
+8. Gunakan operator = untuk data berupa int(INT)
 """
     
     messages = [
