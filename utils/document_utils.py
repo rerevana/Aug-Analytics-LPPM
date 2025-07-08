@@ -6,18 +6,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def find_pdf_url_in_results(results_json: str) -> str or None:
-    """Mencari URL PDF pertama dalam hasil query JSON."""
+def find_pdf_url_in_results(results_json: str) -> list[str]:
+    """Mencari semua URL PDF dalam hasil query JSON."""
+    pdf_urls = []
     try:
         data = json.loads(results_json)
         for row in data:
             for value in row.values():
                 if isinstance(value, str) and value.lower().endswith('.pdf'):
-                    return value
+                    pdf_urls.append(value)
     except (json.JSONDecodeError, TypeError) as e:
         logger.warning(f"Gagal mem-parse JSON untuk mencari URL: {e}")
-        return None
-    return None
+    return pdf_urls # This now returns a list
 
 def extract_text_from_pdf_url(pdf_url: str) -> str:
     """Mengunduh dan mengekstrak teks dari URL PDF."""
