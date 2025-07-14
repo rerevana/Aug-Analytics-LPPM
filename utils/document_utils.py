@@ -2,6 +2,7 @@ import fitz  # PyMuPDF
 import requests
 import logging
 import re
+import json
 from typing import Optional
 from ocr import ocr_pdf_from_bytes # Impor fungsi OCR yang baru kita buat
 
